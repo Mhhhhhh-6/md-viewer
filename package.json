@@ -1,0 +1,30 @@
+{
+  "name": "md-viewer",
+  "version": "1.0.0",
+  "description": "手机电脑互通的 Markdown 阅读器",
+  "main": "dist/server.js",
+  "bin": {
+    "md-viewer": "dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc --watch & node --watch dist/server.js",
+    "static": "tsc && node dist/build.js"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.0",
+    "express": "^5.1.0",
+    "marked": "^15.0.0",
+    "marked-highlight": "^2.2.0",
+    "highlight.js": "^11.11.0",
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/ws": "^8.18.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
