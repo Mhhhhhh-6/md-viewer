@@ -1,4 +1,5 @@
 {
+  "framework": null,
   "buildCommand": "npm run build && node dist/build.js docs out",
   "outputDirectory": "out",
   "installCommand": "npm install"
