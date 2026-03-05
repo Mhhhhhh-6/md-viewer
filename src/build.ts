@@ -152,9 +152,19 @@ function flattenFiles(nodes: FileNode[], prefix?: string): { name: string; fileP
   return result;
 }
 
-// 文件路径转 URL 路径
-function filePathToUrlPath(filePath: string): string {
+// 文件路径转输出文件路径
+function filePathToOutPath(filePath: string): string {
   return filePath.replace(/\.md$/i, ".html").replace(/\\/g, "/");
+}
+
+// 文件路径转 URL（对路径段编码，避免 + 被 CDN 当作空格）
+function filePathToHref(filePath: string): string {
+  return filePath
+    .replace(/\.md$/i, ".html")
+    .replace(/\\/g, "/")
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
 }
 
 // 构建
@@ -191,7 +201,7 @@ function build() {
       indexBody += `<li class="dir-name">📁 ${file.dir}</li>`;
       lastDir = file.dir;
     }
-    const href = "/" + filePathToUrlPath(file.filePath);
+    const href = "/" + filePathToHref(file.filePath);
     indexBody += `
       <a href="${href}" class="file-item">
         <div class="name">📄 ${file.name.replace(/\.md$/i, "")}</div>
@@ -211,10 +221,10 @@ function build() {
     const articleBody = `<article class="article">${html}</article>`;
     const page = htmlTemplate(title, articleBody, false);
 
-    const outPath = path.join(outputDir, filePathToUrlPath(file.filePath));
+    const outPath = path.join(outputDir, filePathToOutPath(file.filePath));
     fs.mkdirSync(path.dirname(outPath), { recursive: true });
     fs.writeFileSync(outPath, page);
-    console.log(`✓ ${filePathToUrlPath(file.filePath)}`);
+    console.log(`✓ ${filePathToOutPath(file.filePath)}`);
   }
 
   // 复制所有非 MD 的资源文件（图片、PDF 等）
