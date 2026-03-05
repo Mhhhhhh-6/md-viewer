@@ -217,7 +217,51 @@ function build() {
     console.log(`✓ ${filePathToUrlPath(file.filePath)}`);
   }
 
-  console.log(`\n构建完成！共 ${files.length + 1} 个页面 → ${outputDir}`);
+  // 复制所有非 MD 的资源文件（图片、PDF 等）
+  const assetCount = copyAssets(sourceDir, outputDir, "");
+
+  console.log(`\n构建完成！${files.length + 1} 个页面 + ${assetCount} 个资源文件 → ${outputDir}`);
+}
+
+const ASSET_EXTENSIONS = new Set([
+  ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico", ".bmp",
+  ".mp4", ".webm", ".mp3", ".wav",
+  ".pdf", ".zip",
+]);
+
+const IGNORED_DIRS = new Set([
+  "node_modules", "dist", "out", "build", ".git", "__pycache__", ".venv",
+]);
+
+function copyAssets(srcDir: string, destDir: string, relative: string): number {
+  let count = 0;
+  let entries: fs.Dirent[];
+  try {
+    entries = fs.readdirSync(srcDir, { withFileTypes: true });
+  } catch {
+    return 0;
+  }
+
+  for (const entry of entries) {
+    if (entry.name.startsWith(".") || IGNORED_DIRS.has(entry.name)) continue;
+
+    const srcPath = path.join(srcDir, entry.name);
+    const rel = relative ? relative + "/" + entry.name : entry.name;
+
+    if (entry.isDirectory()) {
+      count += copyAssets(srcPath, destDir, rel);
+    } else {
+      const ext = path.extname(entry.name).toLowerCase();
+      if (ASSET_EXTENSIONS.has(ext)) {
+        const destPath = path.join(destDir, rel);
+        fs.mkdirSync(path.dirname(destPath), { recursive: true });
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`✓ [资源] ${rel}`);
+        count++;
+      }
+    }
+  }
+  return count;
 }
 
 build();
