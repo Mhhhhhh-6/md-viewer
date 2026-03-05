@@ -9,6 +9,7 @@ import chokidar from "chokidar";
 import * as qrcodeTerminal from "qrcode-terminal";
 import { scanDirectory, readMarkdownFile } from "./scanner.js";
 import { renderMarkdown } from "./renderer.js";
+import { processMarkdownImages } from "./image-processor.js";
 
 const targetDir = path.resolve(process.argv[2] || ".");
 const PORT = parseInt(process.env.PORT || "3456", 10);
@@ -19,6 +20,9 @@ const wss = new WebSocketServer({ server });
 
 // 静态文件
 app.use(express.static(path.join(__dirname, "..", "public")));
+
+// 提供 docs 目录下的图片等资源文件访问
+app.use("/docs", express.static(targetDir));
 
 // API: 获取文件列表
 app.get("/api/files", (_req, res) => {
@@ -35,7 +39,19 @@ app.get("/api/file", (req, res) => {
   }
   try {
     const raw = readMarkdownFile(targetDir, filePath);
-    const html = renderMarkdown(raw);
+    let html = renderMarkdown(raw);
+    // 将相对图片路径转换为 /docs/ 前缀的绝对路径
+    const fileDir = path.dirname(filePath);
+    html = html.replace(
+      /(<img\s+[^>]*src=")([^"]+)(")/g,
+      (_m, pre, src, post) => {
+        if (src.startsWith("http://") || src.startsWith("https://") || src.startsWith("data:") || src.startsWith("/")) {
+          return pre + src + post;
+        }
+        const resolved = path.posix.normalize(fileDir + "/" + src);
+        return pre + "/docs/" + resolved + post;
+      }
+    );
     res.json({ html, raw });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "read error";
@@ -68,6 +84,16 @@ const watcher = chokidar.watch(targetDir, {
 
 watcher.on("all", (event, filePath) => {
   if (!filePath.endsWith(".md")) return;
+
+  // 新增或修改时自动处理图片引用
+  if (event === "add" || event === "change") {
+    try {
+      processMarkdownImages(filePath, targetDir);
+    } catch (err) {
+      console.error(`  [图片处理] 处理失败: ${filePath}`, err);
+    }
+  }
+
   const relative = path.relative(targetDir, filePath).replace(/\\/g, "/");
   broadcast({ event, path: relative });
 });

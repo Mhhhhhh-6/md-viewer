@@ -75,23 +75,29 @@ async function openFile(filePath, fileName) {
     el.classList.toggle("active", el.dataset.path === filePath);
   });
 
-  const res = await fetch("/api/file?path=" + encodeURIComponent(filePath));
-  const data = await res.json();
-
-  if (data.error) {
-    markdownBody.innerHTML = '<p style="color:red">加载失败: ' + data.error + "</p>";
-    return;
-  }
-
-  readerTitle.textContent = fileName;
-  markdownBody.innerHTML = data.html;
-
-  // 生成 TOC
-  buildTOC();
-
-  // 切换视图
+  // 切换视图（先显示加载状态）
   welcome.classList.add("hidden");
   reader.classList.remove("hidden");
+  readerTitle.textContent = fileName;
+  markdownBody.innerHTML = '<p style="color:var(--text2)">加载中...</p>';
+
+  try {
+    const res = await fetch("/api/file?path=" + encodeURIComponent(filePath));
+    const data = await res.json();
+
+    if (data.error) {
+      markdownBody.innerHTML = '<p style="color:red">加载失败: ' + data.error + "</p>";
+      return;
+    }
+
+    markdownBody.innerHTML = data.html;
+
+    // 生成 TOC
+    buildTOC();
+  } catch (err) {
+    markdownBody.innerHTML = '<p style="color:red">加载失败: ' + err.message + "</p>";
+    return;
+  }
 
   // 移动端：隐藏侧边栏
   if (window.innerWidth <= 768) {

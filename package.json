@@ -10,7 +10,8 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsc --watch & node --watch dist/server.js",
-    "static": "tsc && node dist/build.js"
+    "static": "tsc && node dist/build.js",
+    "import-docs": "tsc && node dist/import-docs.js"
   },
   "dependencies": {
     "chokidar": "^4.0.0",
